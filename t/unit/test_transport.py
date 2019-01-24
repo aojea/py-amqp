@@ -277,6 +277,16 @@ class test_AbstractTransport:
         with pytest.raises(socket.timeout):
             self.t.read_frame()
 
+    def test_read_frame__ENOENT(self):
+        self.t._read = Mock()
+        self.t.connected = True
+        exc = OSError()
+        exc.errno = errno.ENOENT
+        self.t._read.side_effect = exc
+        with pytest.raises(OSError):
+            self.t.read_frame()
+        assert self.t.connected
+
     def test_read_frame__EINTR(self):
         self.t._read = Mock()
         self.t.connected = True
