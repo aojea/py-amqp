@@ -4,7 +4,7 @@ import errno
 import socket
 
 import pytest
-from case import ANY, Mock, call, patch
+from case import ANY, Mock, MagicMock, call, patch
 
 from amqp import transport
 from amqp.exceptions import UnexpectedFrame
@@ -598,6 +598,22 @@ class test_SSLTransport:
         self.t._quick_recv = Mock(name='recv', return_value='')
         with pytest.raises(IOError,
                            match=r'.*Server unexpectedly closed connection.*'):
+            self.t._read(64)
+
+    def test_read_timeout(self):
+        self.t.sock = Mock(name='SSLSocket')
+        self.t._quick_recv = Mock(name='recv', return_value='4')
+        self.t._quick_recv.side_effect = socket.timeout()
+        self.t._read_buffer = MagicMock(return_value='AA')
+        with pytest.raises(socket.timeout):
+            self.t._read(64)
+
+    def test_read_SSLError(self):
+        self.t.sock = Mock(name='SSLSocket')
+        self.t._quick_recv = Mock(name='recv', return_value='4')
+        self.t._quick_recv.side_effect = transport.SSLError('timed out')
+        self.t._read_buffer = MagicMock(return_value='AA')
+        with pytest.raises(socket.timeout):
             self.t._read(64)
 
 
